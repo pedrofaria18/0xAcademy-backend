@@ -1,0 +1,28 @@
+#!/bin/bash
+# ============================================
+# HEALTH CHECK ENDPOINT
+# ============================================
+# Verifica o status da aplicação
+# Não requer autenticação
+
+# Configuração da base URL
+BASE_URL="http://localhost:3001"
+
+echo "=========================================="
+echo "HEALTH CHECK"
+echo "=========================================="
+
+# GET /health
+# Retorna o status da aplicação
+curl -X GET "${BASE_URL}/health" \
+  -H "Content-Type: application/json" \
+  -w "\n\nStatus Code: %{http_code}\n" \
+  -s | jq '.'
+
+echo ""
+echo "Resposta esperada (200):"
+echo '{'
+echo '  "status": "ok",'
+echo '  "timestamp": "2024-11-20T...",'
+echo '  "environment": "development"'
+echo '}'

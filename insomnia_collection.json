@@ -1,0 +1,619 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2024-11-20T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_0xacademy",
+      "_type": "workspace",
+      "name": "0xAcademy Backend API",
+      "description": "API completa do backend 0xAcademy com autenticação SIWE, cursos, vídeos e gestão de usuários",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3001",
+        "jwt_token": "",
+        "wallet_address": "0x1234567890123456789012345678901234567890",
+        "course_id": "",
+        "lesson_id": "",
+        "video_id": ""
+      },
+      "parentId": "wrk_0xacademy"
+    },
+    {
+      "_id": "fld_health",
+      "_type": "request_group",
+      "name": "Health",
+      "parentId": "wrk_0xacademy"
+    },
+    {
+      "_id": "req_health",
+      "_type": "request",
+      "name": "Health Check",
+      "method": "GET",
+      "url": "{{ _.base_url }}/health",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parentId": "fld_health",
+      "description": "Verifica o status da aplicação. Não requer autenticação."
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "name": "Authentication",
+      "parentId": "wrk_0xacademy",
+      "description": "Endpoints de autenticação usando SIWE (Sign In With Ethereum)"
+    },
+    {
+      "_id": "req_auth_nonce",
+      "_type": "request",
+      "name": "1. Generate Nonce",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/nonce",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"address\": \"{{ _.wallet_address }}\"\n}"
+      },
+      "parentId": "fld_auth",
+      "description": "Gera um nonce para autenticação SIWE. Use este nonce para criar a mensagem SIWE e assinar com a wallet."
+    },
+    {
+      "_id": "req_auth_verify",
+      "_type": "request",
+      "name": "2. Verify Signature & Login",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/verify",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"message\": \"localhost:3001 wants you to sign in with your Ethereum account:\\n0x1234567890123456789012345678901234567890\\n\\nSign in with Ethereum to the app.\\n\\nURI: http://localhost:3001\\nVersion: 1\\nChain ID: 1\\nNonce: ABC123XYZ\\nIssued At: 2024-11-20T12:00:00.000Z\",\n  \"signature\": \"0xabcdef1234567890...\"\n}"
+      },
+      "parentId": "fld_auth",
+      "description": "Verifica a assinatura SIWE e retorna um JWT token. Salve o token retornado na variável jwt_token."
+    },
+    {
+      "_id": "req_auth_me",
+      "_type": "request",
+      "name": "3. Get Current User",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/auth/me",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "parentId": "fld_auth",
+      "description": "Retorna informações do usuário autenticado. Requer JWT token."
+    },
+    {
+      "_id": "req_auth_logout",
+      "_type": "request",
+      "name": "4. Logout",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/logout",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{}"
+      },
+      "parentId": "fld_auth",
+      "description": "Faz logout do usuário. Não requer autenticação."
+    },
+    {
+      "_id": "fld_courses",
+      "_type": "request_group",
+      "name": "Courses",
+      "parentId": "wrk_0xacademy",
+      "description": "Gerenciamento completo de cursos (CRUD)"
+    },
+    {
+      "_id": "req_courses_list",
+      "_type": "request",
+      "name": "List Courses",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/courses?page=1&limit=12",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "page",
+          "value": "1",
+          "description": "Número da página"
+        },
+        {
+          "name": "limit",
+          "value": "12",
+          "description": "Itens por página"
+        },
+        {
+          "name": "category",
+          "value": "",
+          "description": "Filtrar por categoria",
+          "disabled": true
+        },
+        {
+          "name": "search",
+          "value": "",
+          "description": "Buscar em título e descrição",
+          "disabled": true
+        }
+      ],
+      "parentId": "fld_courses",
+      "description": "Lista todos os cursos publicados com paginação e filtros opcionais."
+    },
+    {
+      "_id": "req_courses_get",
+      "_type": "request",
+      "name": "Get Course Details",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/courses/{{ _.course_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parentId": "fld_courses",
+      "description": "Obtém detalhes completos de um curso específico incluindo lessons."
+    },
+    {
+      "_id": "req_courses_create",
+      "_type": "request",
+      "name": "Create Course",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/courses",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Introdução ao Ethereum\",\n  \"description\": \"Aprenda os fundamentos do Ethereum, smart contracts e desenvolvimento Web3 do zero.\",\n  \"price_usd\": 99.99,\n  \"thumbnail_url\": \"https://example.com/thumbnail.jpg\",\n  \"category\": \"blockchain\",\n  \"level\": \"beginner\",\n  \"is_public\": false,\n  \"tags\": [\"ethereum\", \"smart-contracts\", \"web3\", \"solidity\"]\n}"
+      },
+      "parentId": "fld_courses",
+      "description": "Cria um novo curso. Requer autenticação. O curso é criado como não publicado (is_published = false)."
+    },
+    {
+      "_id": "req_courses_update",
+      "_type": "request",
+      "name": "Update Course",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/courses/{{ _.course_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Introdução ao Ethereum - Atualizado\",\n  \"description\": \"Descrição atualizada do curso.\",\n  \"price_usd\": 79.99\n}"
+      },
+      "parentId": "fld_courses",
+      "description": "Atualiza um curso existente. Requer autenticação e ser o proprietário do curso."
+    },
+    {
+      "_id": "req_courses_delete",
+      "_type": "request",
+      "name": "Delete Course",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/courses/{{ _.course_id }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "parentId": "fld_courses",
+      "description": "Deleta um curso. Requer autenticação e ser o proprietário do curso."
+    },
+    {
+      "_id": "req_courses_publish",
+      "_type": "request",
+      "name": "Publish/Unpublish Course",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/courses/{{ _.course_id }}/publish",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"publish\": true\n}"
+      },
+      "parentId": "fld_courses",
+      "description": "Publica ou despublica um curso. Para publicar, o curso deve ter pelo menos 1 lesson."
+    },
+    {
+      "_id": "req_courses_enroll",
+      "_type": "request",
+      "name": "Enroll in Course",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/courses/{{ _.course_id }}/enroll",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{}"
+      },
+      "parentId": "fld_courses",
+      "description": "Matricula o usuário autenticado em um curso. Cursos gratuitos são matriculados imediatamente. Cursos pagos retornam erro 501 (não implementado)."
+    },
+    {
+      "_id": "req_courses_enrolled",
+      "_type": "request",
+      "name": "My Enrolled Courses",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/courses/enrolled",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "parentId": "fld_courses",
+      "description": "Lista todos os cursos em que o usuário autenticado está matriculado."
+    },
+    {
+      "_id": "fld_lessons",
+      "_type": "request_group",
+      "name": "Lessons",
+      "parentId": "wrk_0xacademy",
+      "description": "Gerenciamento de aulas/lessons dos cursos"
+    },
+    {
+      "_id": "req_lessons_list",
+      "_type": "request",
+      "name": "List Course Lessons",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/courses/{{ _.course_id }}/lessons",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "parentId": "fld_lessons",
+      "description": "Lista todas as lessons de um curso. Requer autenticação e acesso ao curso (proprietário ou matriculado)."
+    },
+    {
+      "_id": "req_lessons_create",
+      "_type": "request",
+      "name": "Create Lesson",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/courses/{{ _.course_id }}/lessons",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Introdução ao Ethereum\",\n  \"description\": \"Nesta aula você aprenderá os conceitos básicos do Ethereum.\",\n  \"video_url\": \"https://customer-xxxxx.cloudflarestream.com/video-id/manifest/video.m3u8\",\n  \"content\": \"# Conteúdo da Aula\\n\\nMarkdown content aqui...\",\n  \"order\": 1,\n  \"duration_minutes\": 45,\n  \"is_free\": true\n}"
+      },
+      "parentId": "fld_lessons",
+      "description": "Cria uma nova lesson em um curso. Requer autenticação e ser o proprietário do curso."
+    },
+    {
+      "_id": "fld_videos",
+      "_type": "request_group",
+      "name": "Videos",
+      "parentId": "wrk_0xacademy",
+      "description": "Gerenciamento de vídeos usando Cloudflare Stream"
+    },
+    {
+      "_id": "req_videos_upload_url",
+      "_type": "request",
+      "name": "Generate Upload URL",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/videos/upload-url",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"courseId\": \"{{ _.course_id }}\",\n  \"lessonId\": \"{{ _.lesson_id }}\",\n  \"maxDurationSeconds\": 3600\n}"
+      },
+      "parentId": "fld_videos",
+      "description": "Gera uma URL de upload para enviar vídeos ao Cloudflare Stream. Requer autenticação e ser o proprietário do curso."
+    },
+    {
+      "_id": "req_videos_get",
+      "_type": "request",
+      "name": "Get Video Details",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/videos/{{ _.video_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "parentId": "fld_videos",
+      "description": "Obtém informações de um vídeo do Cloudflare Stream. Requer autenticação e acesso ao curso do vídeo."
+    },
+    {
+      "_id": "req_videos_delete",
+      "_type": "request",
+      "name": "Delete Video",
+      "method": "DELETE",
+      "url": "{{ _.base_url }}/api/videos/{{ _.video_id }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "parentId": "fld_videos",
+      "description": "Deleta um vídeo do Cloudflare Stream e remove as referências nas lessons. Requer autenticação e ser o uploader do vídeo."
+    },
+    {
+      "_id": "req_videos_signed_url",
+      "_type": "request",
+      "name": "Generate Signed URL (Not Implemented)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/videos/{{ _.video_id }}/signed-url",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"expiresIn\": 3600\n}"
+      },
+      "parentId": "fld_videos",
+      "description": "Gera uma URL assinada para acesso temporário ao vídeo. NOTA: Retorna erro 501 - Não implementado."
+    },
+    {
+      "_id": "req_videos_webhook",
+      "_type": "request",
+      "name": "Cloudflare Webhook",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/videos/webhook",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"uid\": \"video_id_from_cloudflare\",\n  \"status\": {\n    \"state\": \"ready\",\n    \"duration\": 3600\n  },\n  \"meta\": {\n    \"courseId\": \"course-uuid\",\n    \"lessonId\": \"lesson-uuid\",\n    \"userId\": \"user-uuid\",\n    \"uploadedAt\": \"2024-11-20T12:00:00.000Z\"\n  }\n}"
+      },
+      "parentId": "fld_videos",
+      "description": "Webhook chamado pelo Cloudflare quando o processamento do vídeo é concluído. Não requer autenticação."
+    },
+    {
+      "_id": "fld_user",
+      "_type": "request_group",
+      "name": "User",
+      "parentId": "wrk_0xacademy",
+      "description": "Gerenciamento de perfil, progresso e certificados do usuário"
+    },
+    {
+      "_id": "req_user_profile",
+      "_type": "request",
+      "name": "Get My Profile",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/user/profile",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "parentId": "fld_user",
+      "description": "Obtém o perfil do usuário autenticado."
+    },
+    {
+      "_id": "req_user_update_profile",
+      "_type": "request",
+      "name": "Update My Profile",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/user/profile",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"display_name\": \"João Silva\",\n  \"bio\": \"Desenvolvedor Web3 e entusiasta de blockchain\",\n  \"avatar_url\": \"https://example.com/avatar.jpg\",\n  \"social_links\": {\n    \"twitter\": \"@joaosilva\",\n    \"github\": \"joaosilva\",\n    \"linkedin\": \"https://linkedin.com/in/joaosilva\",\n    \"website\": \"https://joaosilva.dev\"\n  }\n}"
+      },
+      "parentId": "fld_user",
+      "description": "Atualiza o perfil do usuário autenticado."
+    },
+    {
+      "_id": "req_user_teaching",
+      "_type": "request",
+      "name": "My Teaching Courses",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/user/teaching",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "parentId": "fld_user",
+      "description": "Lista todos os cursos em que o usuário autenticado é o instrutor."
+    },
+    {
+      "_id": "req_user_progress",
+      "_type": "request",
+      "name": "My Learning Progress",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/user/progress",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "parentId": "fld_user",
+      "description": "Obtém o progresso de aprendizado do usuário em todos os cursos matriculados."
+    },
+    {
+      "_id": "req_user_mark_lesson",
+      "_type": "request",
+      "name": "Mark Lesson as Complete",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/user/progress/lesson/{{ _.lesson_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"completed\": true\n}"
+      },
+      "parentId": "fld_user",
+      "description": "Marca uma lesson como completada ou não completada. Retorna se o curso inteiro foi completado."
+    },
+    {
+      "_id": "req_user_certificates",
+      "_type": "request",
+      "name": "My Certificates",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/user/certificates",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.jwt_token }}"
+        }
+      ],
+      "parentId": "fld_user",
+      "description": "Lista todos os certificados do usuário autenticado."
+    },
+    {
+      "_id": "req_user_public_profile",
+      "_type": "request",
+      "name": "Get Public User Profile",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/user/{{ _.wallet_address }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parentId": "fld_user",
+      "description": "Obtém o perfil público de um usuário através do endereço da wallet. Não requer autenticação."
+    }
+  ]
+}
