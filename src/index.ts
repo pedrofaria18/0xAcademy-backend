@@ -13,9 +13,6 @@ import { env } from './utils/validateEnv';
 
 dotenv.config();
 
-// Validate environment variables on startup
-// This will throw an error if any required variables are missing
-
 const app = express();
 const PORT = env.PORT || 3001;
 
@@ -55,7 +52,6 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT}`);
   logger.info(`📱 Environment: ${env.NODE_ENV}`);
-  logger.info(`🔗 Frontend URL: ${env.FRONTEND_URL}`);
 });
 
 export default app;

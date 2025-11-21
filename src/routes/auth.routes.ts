@@ -108,7 +108,7 @@ router.post('/verify', asyncHandler(async (req, res) => {
         expiresIn: process.env.JWT_EXPIRES_IN || '7d',
       }
     );
-    
+
     const { data: session, error: sessionError } = await supabaseAdmin.auth.admin.createUser({
       email: `${address}@wallet.local`,
       email_confirm: true,
