@@ -6,11 +6,11 @@ import { JsonWebTokenError } from 'jsonwebtoken';
 
 export const errorHandler = (
   err: Error,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
-) => {
-  let error = { ...err } as any;
+  _next: NextFunction
+): void => {
+  let error = { ...err } as { message: string; statusCode?: number; code?: number; keyValue?: Record<string, unknown> };
   error.message = err.message;
 
   if (process.env.NODE_ENV === 'development') {

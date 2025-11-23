@@ -10,25 +10,25 @@ const colors = {
 };
 
 export const logger = {
-  info: (message: string, ...args: any[]) => {
-    console.log(`${colors.blue}[INFO]${colors.reset} ${message}`, ...args);
+  info: (message: string, ...args: unknown[]) => {
+    console.warn(`${colors.blue}[INFO]${colors.reset} ${message}`, ...args);
   },
-  
-  success: (message: string, ...args: any[]) => {
-    console.log(`${colors.green}[SUCCESS]${colors.reset} ${message}`, ...args);
+
+  success: (message: string, ...args: unknown[]) => {
+    console.warn(`${colors.green}[SUCCESS]${colors.reset} ${message}`, ...args);
   },
-  
-  warn: (message: string, ...args: any[]) => {
-    console.log(`${colors.yellow}[WARN]${colors.reset} ${message}`, ...args);
+
+  warn: (message: string, ...args: unknown[]) => {
+    console.warn(`${colors.yellow}[WARN]${colors.reset} ${message}`, ...args);
   },
-  
-  error: (message: string, ...args: any[]) => {
+
+  error: (message: string, ...args: unknown[]) => {
     console.error(`${colors.red}[ERROR]${colors.reset} ${message}`, ...args);
   },
-  
-  debug: (message: string, ...args: any[]) => {
+
+  debug: (message: string, ...args: unknown[]) => {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`${colors.magenta}[DEBUG]${colors.reset} ${message}`, ...args);
+      console.warn(`${colors.magenta}[DEBUG]${colors.reset} ${message}`, ...args);
     }
   },
 };

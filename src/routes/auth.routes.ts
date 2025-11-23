@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { SiweMessage } from 'siwe';
 import jwt from 'jsonwebtoken';
 import { supabaseAdmin } from '../config/supabase';
@@ -17,7 +17,51 @@ const verifySchema = z.object({
   signature: z.string(),
 });
 
-router.post('/nonce', asyncHandler(async (req, res) => {
+/**
+ * @swagger
+ * /auth/nonce:
+ *   post:
+ *     tags: [Authentication]
+ *     summary: Request a nonce for wallet authentication
+ *     description: Generates a unique nonce for Sign-In with Ethereum (SIWE) authentication. The nonce expires in 10 minutes.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - address
+ *             properties:
+ *               address:
+ *                 type: string
+ *                 pattern: ^0x[a-fA-F0-9]{40}$
+ *                 example: "0x1234567890abcdef1234567890abcdef12345678"
+ *     responses:
+ *       200:
+ *         description: Nonce generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 nonce:
+ *                   type: string
+ *                   example: "Ab3Cd5Ef7Gh9Ij1Kl"
+ *       400:
+ *         description: Invalid wallet address format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/nonce', asyncHandler(async (req: Request, res: Response) => {
   const { address } = nonceRequestSchema.parse(req.body);
   
   const nonce = generateNonce();
@@ -37,7 +81,59 @@ router.post('/nonce', asyncHandler(async (req, res) => {
   res.json({ nonce });
 }));
 
-router.post('/verify', asyncHandler(async (req, res) => {
+/**
+ * @swagger
+ * /auth/verify:
+ *   post:
+ *     tags: [Authentication]
+ *     summary: Verify SIWE signature and authenticate user
+ *     description: Verifies a signed SIWE message and returns a JWT token. Creates a new user if wallet address doesn't exist.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - message
+ *               - signature
+ *             properties:
+ *               message:
+ *                 type: string
+ *                 description: SIWE formatted message
+ *                 example: "localhost:3000 wants you to sign in with your Ethereum account..."
+ *               signature:
+ *                 type: string
+ *                 description: Signature from wallet
+ *                 example: "0x..."
+ *     responses:
+ *       200:
+ *         description: Authentication successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT token valid for 7 days
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Invalid signature or expired nonce
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/verify', asyncHandler(async (req: Request, res: Response) => {
   const { message, signature } = verifySchema.parse(req.body);
   
   try {
@@ -68,7 +164,7 @@ router.post('/verify', asyncHandler(async (req, res) => {
       .delete()
       .eq('id', nonceData.id);
     
-    let { data: user, error: userError } = await supabaseAdmin
+    let { data: user } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('wallet_address', address)
@@ -101,28 +197,35 @@ router.post('/verify', asyncHandler(async (req, res) => {
       {
         id: user.id,
         address: user.wallet_address,
-        iat: Math.floor(Date.now() / 1000),
       },
       process.env.JWT_SECRET!,
       {
-        expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+        expiresIn: '7d',
       }
     );
 
-    const { data: session, error: sessionError } = await supabaseAdmin.auth.admin.createUser({
+    await supabaseAdmin.auth.admin.createUser({
       email: `${address}@wallet.local`,
       email_confirm: true,
       user_metadata: {
         wallet_address: address,
       },
+    }).catch(() => {
+      // User might already exist in auth, ignore error
     });
     
     res.json({
       token,
       user: {
         id: user.id,
+        wallet_address: user.wallet_address,
         address: user.wallet_address,
+        display_name: user.display_name,
+        bio: user.bio,
+        avatar_url: user.avatar_url,
+        social_links: user.social_links,
         created_at: user.created_at,
+        updated_at: user.updated_at,
       },
     });
     
@@ -132,11 +235,65 @@ router.post('/verify', asyncHandler(async (req, res) => {
   }
 }));
 
-router.post('/logout', asyncHandler(async (req, res) => {
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     tags: [Authentication]
+ *     summary: Logout user
+ *     description: Client-side logout endpoint (token should be removed from client storage)
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Logged out successfully"
+ */
+router.post('/logout', asyncHandler(async (_req: Request, res: Response) => {
   res.json({ success: true, message: 'Logged out successfully' });
 }));
 
-router.get('/me', asyncHandler(async (req, res) => {
+/**
+ * @swagger
+ * /auth/me:
+ *   get:
+ *     tags: [Authentication]
+ *     summary: Get current authenticated user
+ *     description: Returns the current user's profile information based on JWT token
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Invalid or missing token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/me', asyncHandler(async (req: Request, res: Response) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
   
   if (!token) {
@@ -144,26 +301,33 @@ router.get('/me', asyncHandler(async (req, res) => {
   }
   
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string; address: string };
+
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('id', decoded.id)
       .single();
-    
+
     if (error || !user) {
       throw new AppError('User not found', 404);
     }
-    
+
     res.json({
       user: {
         id: user.id,
+        wallet_address: user.wallet_address,
         address: user.wallet_address,
+        display_name: user.display_name,
+        role: user.role,
+        bio: user.bio,
+        avatar_url: user.avatar_url,
+        social_links: user.social_links,
         created_at: user.created_at,
+        updated_at: user.updated_at,
       },
     });
-  } catch (error) {
+  } catch (_error) {
     throw new AppError('Invalid token', 401);
   }
 }));

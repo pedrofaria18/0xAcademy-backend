@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { rateLimit } from 'express-rate-limit';
+import swaggerUi from 'swagger-ui-express';
 import { authRouter } from './routes/auth.routes';
 import { coursesRouter } from './routes/courses.routes';
 import { videosRouter } from './routes/videos.routes';
@@ -10,13 +11,24 @@ import { userRouter } from './routes/user.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { logger } from './utils/logger';
 import { env } from './utils/validateEnv';
+import { swaggerSpec } from './config/swagger';
 
 dotenv.config();
 
 const app = express();
 const PORT = env.PORT || 3001;
 
-app.use(helmet());  
+// Configure helmet to allow Swagger UI resources
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+}));  
 
 app.use(cors({
   origin: env.FRONTEND_URL || 'http://localhost:3000',
@@ -34,12 +46,24 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     environment: env.NODE_ENV
   });
+});
+
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: '0xAcademy API Documentation',
+}));
+
+// Serve swagger.json
+app.get('/api-docs.json', (_req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
 });
 
 app.use('/api/auth', authRouter);
@@ -52,6 +76,7 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT}`);
   logger.info(`📱 Environment: ${env.NODE_ENV}`);
+  logger.info(`📚 API Documentation available at http://localhost:${PORT}/api-docs`);
 });
 
 export default app;

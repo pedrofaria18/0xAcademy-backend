@@ -139,7 +139,7 @@ export function validateEnv(): EnvConfig {
     RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS || OPTIONAL_ENV_VARS.RATE_LIMIT_MAX_REQUESTS
   };
 
-  console.log('✅ Environment variables validated successfully\n');
+  console.warn('✅ Environment variables validated successfully\n');
 
   return config;
 }

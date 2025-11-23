@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response, Request } from 'express';
 import { z } from 'zod';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -19,7 +19,7 @@ const updateProfileSchema = z.object({
   }).optional(),
 });
 
-router.get('/profile', authenticate, asyncHandler(async (req: AuthRequest, res) => {
+router.get('/profile', authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
   const { data: user, error } = await supabaseAdmin
     .from('users')
     .select(`
@@ -37,7 +37,7 @@ router.get('/profile', authenticate, asyncHandler(async (req: AuthRequest, res) 
   res.json({ user });
 }));
 
-router.patch('/profile', authenticate, asyncHandler(async (req: AuthRequest, res) => {
+router.patch('/profile', authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
   const validatedData = updateProfileSchema.parse(req.body);
   
   const { data: user, error } = await supabaseAdmin
@@ -57,7 +57,7 @@ router.patch('/profile', authenticate, asyncHandler(async (req: AuthRequest, res
   res.json({ user });
 }));
 
-router.get('/teaching', authenticate, asyncHandler(async (req: AuthRequest, res) => {
+router.get('/teaching', authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
   const { data: courses, error } = await supabaseAdmin
     .from('courses')
     .select(`
@@ -75,7 +75,7 @@ router.get('/teaching', authenticate, asyncHandler(async (req: AuthRequest, res)
   res.json({ courses });
 }));
 
-router.get('/progress', authenticate, asyncHandler(async (req: AuthRequest, res) => {
+router.get('/progress', authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
   const { data: enrollments, error } = await supabaseAdmin
     .from('enrollments')
     .select(`
@@ -99,10 +99,10 @@ router.get('/progress', authenticate, asyncHandler(async (req: AuthRequest, res)
   }
   
   const progressData = enrollments.map((enrollment: any) => {
-    const totalLessons = enrollment.course._total_lessons[0]?.count || 0;
-    const completedLessons = enrollment.progress.filter((p: any) => p.completed).length;
+    const totalLessons = enrollment.course?._total_lessons?.[0]?.count || 0;
+    const completedLessons = enrollment.progress?.filter((p: any) => p.completed).length || 0;
     const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
-    
+
     return {
       ...enrollment,
       progressPercentage,
@@ -114,7 +114,7 @@ router.get('/progress', authenticate, asyncHandler(async (req: AuthRequest, res)
   res.json({ progress: progressData });
 }));
 
-router.post('/progress/lesson/:lessonId', authenticate, asyncHandler(async (req: AuthRequest, res) => {
+router.post('/progress/lesson/:lessonId', authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
   const { lessonId } = req.params;
   const { completed = true } = req.body;
   
@@ -123,11 +123,11 @@ router.post('/progress/lesson/:lessonId', authenticate, asyncHandler(async (req:
     .select('course_id')
     .eq('id', lessonId)
     .single();
-  
-  if (!lesson) {
+
+  if (!lesson?.course_id) {
     throw new AppError('Lesson not found', 404);
   }
-  
+
   const { data: enrollment } = await supabaseAdmin
     .from('enrollments')
     .select('id')
@@ -167,7 +167,7 @@ router.post('/progress/lesson/:lessonId', authenticate, asyncHandler(async (req:
     .select('id')
     .eq('course_id', lesson.course_id);
   
-  const allCompleted = allProgress?.length === totalLessons?.length && 
+  const allCompleted = allProgress?.length === totalLessons?.length &&
                        allProgress?.every((p: any) => p.completed);
   
   res.json({ 
@@ -176,7 +176,7 @@ router.post('/progress/lesson/:lessonId', authenticate, asyncHandler(async (req:
   });
 }));
 
-router.get('/certificates', authenticate, asyncHandler(async (req: AuthRequest, res) => {
+router.get('/certificates', authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
   const { data: certificates, error } = await supabaseAdmin
     .from('certificates')
     .select(`
@@ -192,15 +192,46 @@ router.get('/certificates', authenticate, asyncHandler(async (req: AuthRequest, 
     `)
     .eq('user_id', req.user!.id)
     .order('issued_at', { ascending: false });
-  
+
   if (error) {
     throw new AppError('Failed to fetch certificates', 500);
   }
-  
+
   res.json({ certificates });
 }));
 
-router.get('/:address', asyncHandler(async (req, res) => {
+router.post('/become-instructor', authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { data: currentUser } = await supabaseAdmin
+    .from('users')
+    .select('role')
+    .eq('id', req.user!.id)
+    .single();
+
+  if (currentUser?.role === 'instructor') {
+    throw new AppError('User is already an instructor', 400);
+  }
+
+  const { data: user, error } = await supabaseAdmin
+    .from('users')
+    .update({
+      role: 'instructor',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', req.user!.id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new AppError('Failed to become instructor', 500);
+  }
+
+  res.json({
+    user,
+    message: 'Successfully became an instructor'
+  });
+}));
+
+router.get('/:address', asyncHandler(async (req: Request, res: Response) => {
   const { address } = req.params;
   
   const { data: user, error } = await supabaseAdmin

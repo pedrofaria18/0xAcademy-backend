@@ -12,7 +12,7 @@ export interface AuthRequest extends Request {
 
 export const authenticate = async (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   try {
@@ -22,7 +22,7 @@ export const authenticate = async (
       throw new AppError('Authentication required', 401);
     }
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string; address: string };
 
     const { data: user, error } = await supabaseAdmin
       .from('users')
@@ -53,7 +53,7 @@ export const authenticate = async (
 
 export const optionalAuth = async (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   try {
@@ -63,7 +63,7 @@ export const optionalAuth = async (
       return next();
     }
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string; address: string };
     
     const { data: user } = await supabaseAdmin
       .from('users')
@@ -79,14 +79,14 @@ export const optionalAuth = async (
     }
     
     next();
-  } catch (error) {
+  } catch (_error) {
     next();
   }
 };
 
 export const requireCourseOwner = async (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   try {
@@ -118,45 +118,43 @@ export const requireCourseOwner = async (
 
 export const requireCourseAccess = async (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) => {
   try {
     if (!req.user) {
       throw new AppError('Authentication required', 401);
     }
-    
+
     const courseId = req.params.courseId;
-    
+
     const { data: course } = await supabaseAdmin
       .from('courses')
-      .select('instructor_id, is_public')
+      .select('instructor_id')
       .eq('id', courseId)
       .single();
-    
+
     if (!course) {
       throw new AppError('Course not found', 404);
     }
-    
-    if (course.is_public) {
-      return next();
-    }
-    
+
+    // Allow access if user is the course instructor
     if (course.instructor_id === req.user.id) {
       return next();
     }
-    
+
+    // Check if user is enrolled in the course
     const { data: enrollment } = await supabaseAdmin
       .from('enrollments')
       .select('id')
       .eq('user_id', req.user.id)
       .eq('course_id', courseId)
       .single();
-    
+
     if (!enrollment) {
       throw new AppError('Access denied. Please enroll in this course.', 403);
     }
-    
+
     next();
   } catch (error) {
     next(error);

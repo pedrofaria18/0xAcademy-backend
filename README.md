@@ -1,4 +1,4 @@
-# Web3 Courses Platform - Backend
+# 0xAcademy - Backend
 
 Backend API for a Web3 educational platform with MetaMask authentication, Supabase database, and Cloudflare Stream video hosting.
 

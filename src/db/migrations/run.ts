@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
