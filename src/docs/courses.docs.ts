@@ -93,10 +93,6 @@
  *                 type: string
  *                 minLength: 10
  *                 example: "Learn the fundamentals of blockchain technology"
- *               price_usd:
- *                 type: number
- *                 minimum: 0
- *                 example: 49.99
  *               thumbnail_url:
  *                 type: string
  *                 format: uri

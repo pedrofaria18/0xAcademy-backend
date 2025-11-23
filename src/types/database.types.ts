@@ -66,7 +66,6 @@ export type Database = {
           is_public: boolean | null
           is_published: boolean | null
           level: string | null
-          price_usd: number | null
           tags: string[] | null
           thumbnail_url: string | null
           title: string
@@ -81,7 +80,6 @@ export type Database = {
           is_public?: boolean | null
           is_published?: boolean | null
           level?: string | null
-          price_usd?: number | null
           tags?: string[] | null
           thumbnail_url?: string | null
           title: string
@@ -96,7 +94,6 @@ export type Database = {
           is_public?: boolean | null
           is_published?: boolean | null
           level?: string | null
-          price_usd?: number | null
           tags?: string[] | null
           thumbnail_url?: string | null
           title?: string

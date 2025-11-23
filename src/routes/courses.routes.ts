@@ -10,11 +10,7 @@ const router = Router();
 
 const CLOUDFLARE_BASE_URL = `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}`;
 
-/**
- * Helper function to extract video ID from Cloudflare Stream URL or return the ID if it's already just an ID
- * URL format: https://customer-{account-id}.cloudflarestream.com/{video-uid}/manifest/video.m3u8
- * Or just the video ID: {video-uid}
- */
+
 function extractVideoIdFromUrl(url: string | null): string | null {
   if (!url) return null;
 
@@ -28,9 +24,6 @@ function extractVideoIdFromUrl(url: string | null): string | null {
   return match ? match[1] : null;
 }
 
-/**
- * Helper function to delete a video from Cloudflare Stream
- */
 async function deleteVideoFromCloudflare(videoId: string): Promise<boolean> {
   try {
     console.log(`Attempting to delete video from Cloudflare: ${videoId}`);
@@ -59,7 +52,6 @@ async function deleteVideoFromCloudflare(videoId: string): Promise<boolean> {
 const createCourseSchema = z.object({
   title: z.string().min(3).max(200),
   description: z.string().min(10),
-  price_usd: z.number().min(0).optional(),
   thumbnail_url: z.string().url().optional(),
   category: z.string().optional(),
   level: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
@@ -510,16 +502,12 @@ router.post('/:courseId/enroll', authenticate, asyncHandler(async (req: AuthRequ
   
   const { data: course } = await supabaseAdmin
     .from('courses')
-    .select('is_published, price_usd')
+    .select('is_published')
     .eq('id', courseId)
     .single();
   
   if (!course || !course.is_published) {
     throw new AppError('Course not available', 404);
-  }
-  
-  if (course.price_usd && course.price_usd > 0) {
-    throw new AppError('Payment processing not yet implemented', 501);
   }
   
   const { data: enrollment, error } = await supabaseAdmin

@@ -249,7 +249,6 @@ router.get('/:address', asyncHandler(async (req: Request, res: Response) => {
         title,
         description,
         thumbnail_url,
-        price_usd,
         is_published,
         _count:enrollments(count)
       )

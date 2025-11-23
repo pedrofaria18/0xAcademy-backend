@@ -115,10 +115,6 @@ const options: swaggerJsdoc.Options = {
               type: 'string',
               nullable: true,
             },
-            price_usd: {
-              type: 'number',
-              nullable: true,
-            },
             category: {
               type: 'string',
               nullable: true,

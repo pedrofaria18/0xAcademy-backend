@@ -43,7 +43,6 @@ CREATE TABLE IF NOT EXISTS courses (
   instructor_id UUID REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(200) NOT NULL,
   description TEXT NOT NULL,
-  price_usd DECIMAL(10, 2),
   thumbnail_url TEXT,
   category VARCHAR(50),
   level VARCHAR(20) CHECK (level IN ('beginner', 'intermediate', 'advanced')),
