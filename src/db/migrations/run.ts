@@ -96,13 +96,15 @@ async function executeMigration(filePath: string, migrationName: string) {
     try {
       // For Supabase, we need to use the REST API to execute raw SQL
       // This is a simplified approach - in production you might use Supabase CLI
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_SERVICE_KEY || '',
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY || ''}`
+      };
+
       const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_SERVICE_KEY,
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
-        },
+        headers,
         body: JSON.stringify({ sql: statement + ';' })
       });
 

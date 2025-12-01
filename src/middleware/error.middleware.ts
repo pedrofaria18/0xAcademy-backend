@@ -23,33 +23,37 @@ export const errorHandler = (
       field: e.path.join('.'),
       message: e.message,
     }));
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       message,
       errors,
     });
+    return;
   }
 
   if (err instanceof JsonWebTokenError) {
-    return res.status(401).json({
+    res.status(401).json({
       success: false,
       message: 'Invalid token',
     });
+    return;
   }
 
   if (err instanceof AppError) {
-    return res.status(err.statusCode).json({
+    res.status(err.statusCode).json({
       success: false,
       message: err.message,
     });
+    return;
   }
 
-  if (error.code === 11000) {
-    const field = Object.keys(error.keyValue)[0];
-    return res.status(400).json({
+  if (error.code === 11000 && error.keyValue) {
+    const field = Object.keys(error.keyValue || {})[0];
+    res.status(400).json({
       success: false,
       message: `${field} already exists`,
     });
+    return;
   }
 
   const statusCode = error.statusCode || 500;
@@ -57,8 +61,8 @@ export const errorHandler = (
 
   res.status(statusCode).json({
     success: false,
-    message: process.env.NODE_ENV === 'production' && statusCode === 500 
-      ? 'Something went wrong' 
+    message: process.env.NODE_ENV === 'production' && statusCode === 500
+      ? 'Something went wrong'
       : message,
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });

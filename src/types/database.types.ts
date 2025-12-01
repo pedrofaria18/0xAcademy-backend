@@ -289,6 +289,8 @@ export type Database = {
           updated_at: string | null
           wallet_address: string
           role: string | null
+          is_instructor: boolean | null
+          is_admin: boolean | null
         }
         Insert: {
           avatar_url?: string | null
@@ -301,6 +303,8 @@ export type Database = {
           updated_at?: string | null
           wallet_address: string
           role?: string | null
+          is_instructor?: boolean | null
+          is_admin?: boolean | null
         }
         Update: {
           avatar_url?: string | null
@@ -313,6 +317,8 @@ export type Database = {
           updated_at?: string | null
           wallet_address?: string
           role?: string | null
+          is_instructor?: boolean | null
+          is_admin?: boolean | null
         }
         Relationships: []
       }

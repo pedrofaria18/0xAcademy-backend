@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { rateLimit } from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
@@ -12,11 +14,33 @@ import { errorHandler } from './middleware/error.middleware';
 import { logger } from './utils/logger';
 import { env } from './utils/validateEnv';
 import { swaggerSpec } from './config/swagger';
+import { connectRedis } from './config/redis';
 
 dotenv.config();
 
 const app = express();
 const PORT = env.PORT || 3001;
+
+// Connect to Redis (optional - will warn if unavailable)
+try {
+  connectRedis();
+} catch (error) {
+  logger.warn('Redis not available, continuing without cache');
+}
+
+// Compression middleware (gzip/brotli)
+app.use(compression({
+  level: 6, // Compression level (0-9, higher = better compression but slower)
+  threshold: 1024, // Only compress responses larger than 1KB
+  filter: (req, res) => {
+    // Don't compress if the client doesn't support it
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Use compression filter
+    return compression.filter(req, res);
+  },
+}));
 
 // Configure helmet to allow Swagger UI resources
 app.use(helmet({
@@ -37,6 +61,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 const limiter = rateLimit({
   windowMs: parseInt(env.RATE_LIMIT_WINDOW_MS || '900000'),

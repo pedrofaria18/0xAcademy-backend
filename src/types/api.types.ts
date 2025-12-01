@@ -15,6 +15,8 @@ export interface UserResponse {
     website?: string;
   };
   role?: string;
+  is_instructor?: boolean;
+  is_admin?: boolean;
   created_at: string;
   updated_at?: string;
 }

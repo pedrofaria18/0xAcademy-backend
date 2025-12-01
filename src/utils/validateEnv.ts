@@ -26,6 +26,12 @@ interface EnvConfig {
   CLOUDFLARE_ACCOUNT_ID?: string;
   CLOUDFLARE_STREAM_TOKEN?: string;
 
+  // Optional: Redis (for caching)
+  REDIS_HOST?: string;
+  REDIS_PORT?: string;
+  REDIS_PASSWORD?: string;
+  REDIS_DB?: string;
+
   // Optional: Rate limiting
   RATE_LIMIT_WINDOW_MS?: string;
   RATE_LIMIT_MAX_REQUESTS?: string;
@@ -135,6 +141,10 @@ export function validateEnv(): EnvConfig {
     SIWE_ORIGIN: process.env.SIWE_ORIGIN!,
     CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID,
     CLOUDFLARE_STREAM_TOKEN: process.env.CLOUDFLARE_STREAM_TOKEN,
+    REDIS_HOST: process.env.REDIS_HOST,
+    REDIS_PORT: process.env.REDIS_PORT,
+    REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+    REDIS_DB: process.env.REDIS_DB,
     RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS || OPTIONAL_ENV_VARS.RATE_LIMIT_WINDOW_MS,
     RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS || OPTIONAL_ENV_VARS.RATE_LIMIT_MAX_REQUESTS
   };

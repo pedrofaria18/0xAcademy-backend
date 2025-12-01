@@ -5,6 +5,7 @@ import { supabaseAdmin } from '../config/supabase';
 import { authenticate, optionalAuth, requireCourseOwner, requireCourseAccess, AuthRequest } from '../middleware/auth.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
 import { AppError } from '../utils/errors';
+import { cache, invalidateCache } from '../middleware/cache.middleware';
 
 const router = Router();
 
@@ -132,7 +133,7 @@ const updateLessonSchema = createLessonSchema.partial();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', optionalAuth, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.get('/', optionalAuth, cache({ ttl: 300 }), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { page = 1, limit = 12, category, search } = req.query;
 
   let query = supabaseAdmin
@@ -176,7 +177,7 @@ router.get('/', optionalAuth, asyncHandler(async (req: AuthRequest, res: Respons
   });
 }));
 
-router.get('/enrolled', authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.get('/enrolled', authenticate, cache({ ttl: 180, includeUserId: true }), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { data: enrollments, error } = await supabaseAdmin
     .from('enrollments')
     .select(`
@@ -200,7 +201,7 @@ router.get('/enrolled', authenticate, asyncHandler(async (req: AuthRequest, res:
   res.json({ enrollments });
 }));
 
-router.get('/:courseId', optionalAuth, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.get('/:courseId', optionalAuth, cache({ ttl: 600 }), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { courseId } = req.params;
   
   const { data: course, error } = await supabaseAdmin
@@ -256,7 +257,7 @@ router.get('/:courseId', optionalAuth, asyncHandler(async (req: AuthRequest, res
   });
 }));
 
-router.post('/', authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/', authenticate, invalidateCache('cache:*:\/api\/courses*'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const validatedData = createCourseSchema.parse(req.body);
   
   const { data: course, error } = await supabaseAdmin
@@ -276,7 +277,7 @@ router.post('/', authenticate, asyncHandler(async (req: AuthRequest, res: Respon
   res.status(201).json({ course });
 }));
 
-router.patch('/:courseId', authenticate, requireCourseOwner, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.patch('/:courseId', authenticate, requireCourseOwner, invalidateCache('cache:*:\/api\/courses*'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { courseId } = req.params;
   const validatedData = updateCourseSchema.parse(req.body);
   
@@ -294,7 +295,7 @@ router.patch('/:courseId', authenticate, requireCourseOwner, asyncHandler(async 
   res.json({ course });
 }));
 
-router.delete('/:courseId', authenticate, requireCourseOwner, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.delete('/:courseId', authenticate, requireCourseOwner, invalidateCache('cache:*:\/api\/courses*'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { courseId } = req.params;
 
   // Get all lessons with videos before deleting the course
@@ -333,7 +334,7 @@ router.delete('/:courseId', authenticate, requireCourseOwner, asyncHandler(async
   res.json({ success: true });
 }));
 
-router.post('/:courseId/publish', authenticate, requireCourseOwner, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/:courseId/publish', authenticate, requireCourseOwner, invalidateCache('cache:*:\/api\/courses*'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { courseId } = req.params;
   const { publish = true } = req.body;
   
@@ -360,7 +361,7 @@ router.post('/:courseId/publish', authenticate, requireCourseOwner, asyncHandler
   res.json({ course });
 }));
 
-router.get('/:courseId/lessons', authenticate, requireCourseAccess, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.get('/:courseId/lessons', authenticate, requireCourseAccess, cache({ ttl: 600 }), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { courseId } = req.params;
   
   const { data: lessons, error } = await supabaseAdmin
@@ -376,7 +377,7 @@ router.get('/:courseId/lessons', authenticate, requireCourseAccess, asyncHandler
   res.json({ lessons });
 }));
 
-router.post('/:courseId/lessons', authenticate, requireCourseOwner, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/:courseId/lessons', authenticate, requireCourseOwner, invalidateCache('cache:*:\/api\/courses*'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { courseId } = req.params;
   const validatedData = createLessonSchema.parse(req.body);
 
@@ -407,7 +408,7 @@ router.post('/:courseId/lessons', authenticate, requireCourseOwner, asyncHandler
   res.status(201).json({ lesson });
 }));
 
-router.patch('/:courseId/lessons/:lessonId', authenticate, requireCourseOwner, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.patch('/:courseId/lessons/:lessonId', authenticate, requireCourseOwner, invalidateCache('cache:*:\/api\/courses*'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { courseId, lessonId } = req.params;
   const validatedData = updateLessonSchema.parse(req.body);
 
@@ -449,7 +450,7 @@ router.patch('/:courseId/lessons/:lessonId', authenticate, requireCourseOwner, a
   res.json({ lesson });
 }));
 
-router.delete('/:courseId/lessons/:lessonId', authenticate, requireCourseOwner, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.delete('/:courseId/lessons/:lessonId', authenticate, requireCourseOwner, invalidateCache('cache:*:\/api\/courses*'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { courseId, lessonId } = req.params;
 
   // Verify lesson belongs to course and get video_url
@@ -486,7 +487,7 @@ router.delete('/:courseId/lessons/:lessonId', authenticate, requireCourseOwner, 
   res.json({ success: true });
 }));
 
-router.post('/:courseId/enroll', authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/:courseId/enroll', authenticate, invalidateCache('cache:*:\/api\/courses*'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { courseId } = req.params;
   
   const { data: existingEnrollment } = await supabaseAdmin
