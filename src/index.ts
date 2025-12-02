@@ -54,8 +54,26 @@ app.use(helmet({
   },
 }));  
 
+// Allow multiple origins for CORS
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://0xacademy.vercel.app',
+  'https://frontend-oie6ww7xv-pedrofaria18s-projects.vercel.app',
+  env.FRONTEND_URL,
+].filter(Boolean); // Remove undefined values
+
 app.use(cors({
-  origin: env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // Check if origin is in allowed list or matches Vercel preview pattern
+    if (allowedOrigins.includes(origin) || origin.includes('vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 
