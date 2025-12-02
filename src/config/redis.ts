@@ -4,9 +4,15 @@ import { env } from '../utils/validateEnv';
 
 let redis: Redis | null = null;
 
-export const connectRedis = (): Redis => {
+export const connectRedis = (): Redis | null => {
   if (redis) {
     return redis;
+  }
+
+  // Don't try to connect if Redis is not configured
+  if (!env.REDIS_HOST) {
+    logger.info('⚠️ Redis not configured - running without cache');
+    return null;
   }
 
   try {
@@ -47,11 +53,9 @@ export const connectRedis = (): Redis => {
     return redis;
   } catch (error) {
     logger.error('Failed to connect to Redis:', error);
-    // Return a mock Redis instance in development if Redis is not available
-    if (env.NODE_ENV === 'development') {
-      logger.warn('⚠️ Running without Redis cache in development mode');
-    }
-    throw error;
+    logger.warn('⚠️ Running without Redis cache');
+    redis = null;
+    return null;
   }
 };
 
