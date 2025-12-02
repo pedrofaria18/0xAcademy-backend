@@ -1,6 +1,5 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
-import fetch from 'node-fetch';
 import { supabaseAdmin } from '../config/supabase';
 import { authenticate, optionalAuth, requireCourseOwner, requireCourseAccess, AuthRequest } from '../middleware/auth.middleware';
 import { asyncHandler } from '../utils/asyncHandler';

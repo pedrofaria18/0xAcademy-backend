@@ -1,5 +1,4 @@
 import { Router, Response, Request } from 'express';
-import fetch from 'node-fetch';
 import crypto from 'crypto';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { asyncHandler } from '../utils/asyncHandler';
