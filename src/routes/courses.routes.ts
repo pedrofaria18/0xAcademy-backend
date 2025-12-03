@@ -67,7 +67,6 @@ const createLessonSchema = z.object({
   content: z.string().optional(),
   order: z.number().int().min(0).optional(),
   duration_minutes: z.number().min(0).optional(), // Accept decimal values for precise duration
-  is_free: z.boolean().default(false),
 });
 
 const updateLessonSchema = createLessonSchema.partial();
@@ -218,8 +217,7 @@ router.get('/:courseId', optionalAuth, cache({ ttl: 600 }), asyncHandler(async (
         title,
         description,
         order,
-        duration_minutes,
-        is_free
+        duration_minutes
       ),
       _count:enrollments(count)
     `)

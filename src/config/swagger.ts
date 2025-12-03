@@ -199,9 +199,6 @@ const options: swaggerJsdoc.Options = {
               type: 'number',
               nullable: true,
             },
-            is_free: {
-              type: 'boolean',
-            },
             created_at: {
               type: 'string',
               format: 'date-time',

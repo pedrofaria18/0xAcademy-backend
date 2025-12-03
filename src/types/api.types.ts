@@ -15,8 +15,6 @@ export interface UserResponse {
     website?: string;
   };
   role?: string;
-  is_instructor?: boolean;
-  is_admin?: boolean;
   created_at: string;
   updated_at?: string;
 }
@@ -67,7 +65,6 @@ export interface LessonResponse {
   content?: string;
   order: number;
   duration_minutes?: number;
-  is_free: boolean;
   created_at: string;
   updated_at?: string;
 }

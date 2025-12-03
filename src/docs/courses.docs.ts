@@ -236,9 +236,6 @@
  *               duration_minutes:
  *                 type: integer
  *                 minimum: 0
- *               is_free:
- *                 type: boolean
- *                 default: false
  *     responses:
  *       201:
  *         description: Lesson created successfully

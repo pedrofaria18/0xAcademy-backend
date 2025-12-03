@@ -12,8 +12,6 @@ export interface RoleAuthRequest extends AuthRequest {
   user?: {
     id: string;
     address: string;
-    isInstructor?: boolean;
-    isAdmin?: boolean;
     role?: UserRole;
   };
 }
@@ -33,7 +31,7 @@ export const requireInstructor = async (
 
     const { data: user, error } = await supabaseAdmin
       .from('users')
-      .select('is_instructor')
+      .select('role')
       .eq('id', req.user.id)
       .single();
 
@@ -41,12 +39,11 @@ export const requireInstructor = async (
       throw new AppError('User not found', 404);
     }
 
-    if (!user.is_instructor) {
+    if (user.role !== 'instructor' && user.role !== 'admin') {
       throw new AppError('Instructor access required', 403);
     }
 
-    req.user.isInstructor = true;
-    req.user.role = 'instructor';
+    req.user.role = user.role as UserRole;
 
     next();
   } catch (error) {
@@ -69,7 +66,7 @@ export const requireAdmin = async (
 
     const { data: user, error } = await supabaseAdmin
       .from('users')
-      .select('is_admin')
+      .select('role')
       .eq('id', req.user.id)
       .single();
 
@@ -77,11 +74,10 @@ export const requireAdmin = async (
       throw new AppError('User not found', 404);
     }
 
-    if (!user.is_admin) {
+    if (user.role !== 'admin') {
       throw new AppError('Admin access required', 403);
     }
 
-    req.user.isAdmin = true;
     req.user.role = 'admin';
 
     next();
@@ -102,7 +98,7 @@ export const requireRole = (...allowedRoles: UserRole[]) => {
 
       const { data: user, error } = await supabaseAdmin
         .from('users')
-        .select('is_instructor, is_admin')
+        .select('role')
         .eq('id', req.user.id)
         .single();
 
@@ -110,12 +106,7 @@ export const requireRole = (...allowedRoles: UserRole[]) => {
         throw new AppError('User not found', 404);
       }
 
-      let userRole: UserRole = 'student';
-      if (user.is_admin) {
-        userRole = 'admin';
-      } else if (user.is_instructor) {
-        userRole = 'instructor';
-      }
+      const userRole: UserRole = (user.role as UserRole) || 'student';
 
       if (!allowedRoles.includes(userRole)) {
         throw new AppError(
@@ -125,8 +116,6 @@ export const requireRole = (...allowedRoles: UserRole[]) => {
       }
 
       req.user.role = userRole;
-      req.user.isInstructor = user.is_instructor ?? false;
-      req.user.isAdmin = user.is_admin ?? false;
 
       next();
     } catch (error) {
@@ -150,7 +139,7 @@ export const requireInstructorOrAdmin = async (
 
     const { data: user, error } = await supabaseAdmin
       .from('users')
-      .select('is_instructor, is_admin')
+      .select('role')
       .eq('id', req.user.id)
       .single();
 
@@ -158,13 +147,11 @@ export const requireInstructorOrAdmin = async (
       throw new AppError('User not found', 404);
     }
 
-    if (!user.is_instructor && !user.is_admin) {
+    if (user.role !== 'instructor' && user.role !== 'admin') {
       throw new AppError('Instructor or Admin access required', 403);
     }
 
-    req.user.isInstructor = user.is_instructor ?? false;
-    req.user.isAdmin = user.is_admin ?? false;
-    req.user.role = user.is_admin ? 'admin' : 'instructor';
+    req.user.role = user.role as UserRole;
 
     next();
   } catch (error) {
@@ -187,21 +174,12 @@ export const loadUserRole = async (
 
     const { data: user } = await supabaseAdmin
       .from('users')
-      .select('is_instructor, is_admin')
+      .select('role')
       .eq('id', req.user.id)
       .single();
 
     if (user) {
-      req.user.isInstructor = user.is_instructor ?? false;
-      req.user.isAdmin = user.is_admin ?? false;
-
-      if (user.is_admin) {
-        req.user.role = 'admin';
-      } else if (user.is_instructor) {
-        req.user.role = 'instructor';
-      } else {
-        req.user.role = 'student';
-      }
+      req.user.role = (user.role as UserRole) || 'student';
     }
 
     next();
